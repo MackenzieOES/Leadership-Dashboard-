@@ -18,29 +18,40 @@ weekly Word-document leadership report.
 ## Stack
 
 Next.js (App Router) + TypeScript + Tailwind CSS, with Prisma + PostgreSQL
-for storage. Deployed on Vercel.
+for storage. Deployed on Netlify.
 
-## Deploying to Vercel
+## Deploying to Netlify
 
-1. **Create a Postgres database.** In the Vercel dashboard, open (or create)
-   the project, go to the **Storage** tab, and add a Postgres database
-   (Vercel's own storage, or Neon/Supabase both work). This automatically
-   sets a `DATABASE_URL`-style env var on the project — if it's named
-   something else (e.g. `POSTGRES_URL_NON_POOLING`), add an env var literally
-   named `DATABASE_URL` with that same value, since that's what
-   `prisma/schema.prisma` reads.
-2. **Import the repo.** "Add New Project" → import
-   `MackenzieOES/Leadership-Dashboard-`. Vercel auto-detects Next.js; no
-   build settings need to change.
-3. **Deploy.** The build runs `prisma migrate deploy && next build` (see
-   `package.json`), which applies the schema to your new database
-   automatically on every deploy — safe to run repeatedly, it skips
-   migrations that are already applied.
-4. **Seed the 7 leader records**, once, after the first successful deploy:
+Netlify's functions have the same ephemeral filesystem as any other
+serverless host, so this still needs a real hosted Postgres database — a
+SQLite file wouldn't survive between requests. `netlify.toml` at the repo
+root already declares the Next.js runtime plugin and build command; nothing
+else to configure there.
+
+1. **Get a Postgres database.** Netlify doesn't host Postgres itself, so
+   either: use **Netlify DB** (Neon-backed, available from the site's
+   **Extensions** / **Integrations** marketplace — a couple of clicks), or
+   create a free database directly on [neon.tech](https://neon.tech) or
+   [supabase.com](https://supabase.com) and copy its connection string.
+2. **Set the `DATABASE_URL` env var.** Site settings → **Environment
+   variables** → add `DATABASE_URL` set to that Postgres connection string.
+   Prisma reads this exact name (`prisma/schema.prisma`), so if Netlify DB
+   creates a differently-named var, copy its value into one literally named
+   `DATABASE_URL`.
+3. **Confirm the branch being deployed has the Postgres migration.** The
+   Postgres migration currently lives on `claude/magical-hopper-0gu9tl`,
+   not yet merged into `main` (see
+   [PR #1](https://github.com/MackenzieOES/Leadership-Dashboard-/pull/1)).
+   If the Netlify site deploys `main`, merge that PR first — otherwise the
+   build will run against the old SQLite schema and fail.
+4. **Deploy.** The build runs `prisma migrate deploy && next build` (see
+   `package.json`), applying the schema to the database automatically —
+   safe to re-run on every deploy, since it skips already-applied
+   migrations.
+5. **Seed the 7 leader records**, once, after the first successful deploy:
    run `DATABASE_URL="<your production connection string>" npm run seed`
-   from your machine (or via `vercel env pull` to grab the value first).
-   Without this step the app runs fine but every tab shows no name/title —
-   `Person` rows won't exist yet.
+   from your machine. Without this step the app runs fine but every tab
+   shows no name/title — the `Person` rows won't exist yet.
 
 That's it — no other environment variables are required for this initial
 build (see "Auth" below for what a future passcode layer would add).
@@ -57,8 +68,8 @@ npm run dev                 # http://localhost:3000
 ```
 
 Any reachable Postgres works for local dev — a local install, Docker, or
-even pointing at the same hosted database Vercel uses (simplest, but shares
-data with production).
+even pointing at the same hosted database production uses (simplest, but
+shares data with production).
 
 ## Project layout
 
@@ -106,6 +117,6 @@ is centralized in that one file's CSS variables.
 - No Slack/email reminders for the weekly submission deadline.
 - No integrations with QuickBooks/CRM/inventory systems — every field is
   manually entered.
-- No custom domain configured — the live URL is whatever Vercel assigns
-  the project (`*.vercel.app`) unless a domain is added in Vercel's
-  project settings.
+- No custom domain configured — the live URL is whatever Netlify assigns
+  the site (`*.netlify.app`) unless a domain is added in Netlify's site
+  settings.
