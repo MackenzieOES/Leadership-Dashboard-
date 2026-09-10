@@ -17,20 +17,48 @@ weekly Word-document leadership report.
 
 ## Stack
 
-Next.js (App Router) + TypeScript + Tailwind CSS, with Prisma + SQLite for
-storage. No external services required to run locally.
+Next.js (App Router) + TypeScript + Tailwind CSS, with Prisma + PostgreSQL
+for storage. Deployed on Vercel.
 
-## Getting started
+## Deploying to Vercel
+
+1. **Create a Postgres database.** In the Vercel dashboard, open (or create)
+   the project, go to the **Storage** tab, and add a Postgres database
+   (Vercel's own storage, or Neon/Supabase both work). This automatically
+   sets a `DATABASE_URL`-style env var on the project — if it's named
+   something else (e.g. `POSTGRES_URL_NON_POOLING`), add an env var literally
+   named `DATABASE_URL` with that same value, since that's what
+   `prisma/schema.prisma` reads.
+2. **Import the repo.** "Add New Project" → import
+   `MackenzieOES/Leadership-Dashboard-`. Vercel auto-detects Next.js; no
+   build settings need to change.
+3. **Deploy.** The build runs `prisma migrate deploy && next build` (see
+   `package.json`), which applies the schema to your new database
+   automatically on every deploy — safe to run repeatedly, it skips
+   migrations that are already applied.
+4. **Seed the 7 leader records**, once, after the first successful deploy:
+   run `DATABASE_URL="<your production connection string>" npm run seed`
+   from your machine (or via `vercel env pull` to grab the value first).
+   Without this step the app runs fine but every tab shows no name/title —
+   `Person` rows won't exist yet.
+
+That's it — no other environment variables are required for this initial
+build (see "Auth" below for what a future passcode layer would add).
+
+## Local development
 
 ```bash
 npm install
-npx prisma migrate deploy   # create prisma/dev.db and apply the schema
+# create a local Postgres database and point DATABASE_URL at it in .env, e.g.:
+#   DATABASE_URL="postgresql://postgres:password@localhost:5432/leadership_dashboard"
+npx prisma migrate deploy   # apply the schema
 npm run seed                # seed the 7 leader records
 npm run dev                 # http://localhost:3000
 ```
 
-`prisma/dev.db` is a local SQLite file (gitignored) — running the two
-commands above regenerates it from scratch, so it's safe to delete anytime.
+Any reachable Postgres works for local dev — a local install, Docker, or
+even pointing at the same hosted database Vercel uses (simplest, but shares
+data with production).
 
 ## Project layout
 
@@ -78,6 +106,6 @@ is centralized in that one file's CSS variables.
 - No Slack/email reminders for the weekly submission deadline.
 - No integrations with QuickBooks/CRM/inventory systems — every field is
   manually entered.
-- No hosting/deployment is set up yet — this runs locally. Deploying it
-  somewhere permanent (a URL Melissa and the 7 leaders can bookmark) is a
-  follow-up step once a hosting preference is confirmed.
+- No custom domain configured — the live URL is whatever Vercel assigns
+  the project (`*.vercel.app`) unless a domain is added in Vercel's
+  project settings.
