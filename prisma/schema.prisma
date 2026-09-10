@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// One row per leader/department. `slug` is the stable identifier used to
+// scope every read/write action, so a future passcode-based auth layer can
+// gate edits by slug without any data-model changes.
+model Person {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  title       String
+  department  String
+  // Display order in the persistent nav (Jill -> Kasey -> LJ -> Jennifer -> Mackenzie -> Nicole -> Arsen)
+  order       Int
+  weekEntries WeekEntry[]
+  decisions   Decision[]
+}
+
+// One row per person per week. Never overwritten across weeks -- a new
+// week gets a new row, keyed by (personId, weekStart).
+model WeekEntry {
+  id       String   @id @default(cuid())
+  personId String
+  person   Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  // Monday of the reporting week, stored at UTC midnight. Uniquely
+  // identifies "which week" this report covers for this person.
+  weekStart DateTime
+
+  // Wins & Accomplishments This Week -- JSON string[]
+  wins Json
+
+  // Priorities for Next Week, in priority order -- JSON string[]
+  priorities Json
+
+  // Blockers & Issues (free text, includes what help is needed)
+  blockers String @default("")
+
+  // Team & Personnel Updates (free text)
+  teamUpdates String @default("")
+
+  // Key Metrics -- JSON: { [metricKey]: { thisWeek, lastWeek, target } }
+  // Values are free-text so leaders can enter currency, percentages,
+  // counts, or named lists as the metric requires.
+  metrics Json
+
+  // Department Focus Questions -- JSON: { [questionKey]: answer }
+  focusAnswers Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  decisions Decision[]
+
+  @@unique([personId, weekStart])
+  @@index([weekStart])
+}
+
+// Decisions Needed from Melissa. Kept as its own table (rather than just a
+// field on WeekEntry) because a decision can outlive the week it was
+// raised in -- it stays in the active rollup until explicitly resolved,
+// regardless of how many weeks have since passed.
+model Decision {
+  id       String @id @default(cuid())
+  personId String
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  weekEntryId String
+  weekEntry   WeekEntry @relation(fields: [weekEntryId], references: [id], onDelete: Cascade)
+
+  ask            String
+  recommendation String @default("")
+  neededBy       DateTime
+
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resolved, neededBy])
+}

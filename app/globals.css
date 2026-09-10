@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/*
+ * PLACEHOLDER THEME -- not final brand colors.
+ * Swap these tokens for OES Global / Hydration Depot's real palette,
+ * logo, and font once provided. Everything below is styled off these
+ * variables, so a rebrand is a one-file change.
+ */
+:root {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #e3e6ea;
+  --color-text: #171a21;
+  --color-text-muted: #626a76;
+  --color-accent: #1e4f91;
+  --color-accent-dark: #163a6b;
+  --color-accent-tint: #eaf1fb;
+  --color-urgent: #b3401f;
+  --color-urgent-tint: #fdf1ec;
+  --color-success: #1f7a4d;
+  --color-success-tint: #ecf7f1;
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-dark: var(--color-accent-dark);
+  --color-accent-tint: var(--color-accent-tint);
+  --color-urgent: var(--color-urgent);
+  --color-urgent-tint: var(--color-urgent-tint);
+  --color-success: var(--color-success);
+  --color-success-tint: var(--color-success-tint);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
